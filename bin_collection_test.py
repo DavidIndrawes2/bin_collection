@@ -1,7 +1,8 @@
 import unittest
 from datetime import datetime
 from icalendar import Event
-from bin_collection import print_events_summary_on_given_date, bin_data_to_grouped_dict
+from collections import OrderedDict
+from bin_collection import print_events_summary_on_given_date, bin_data_to_grouped_dict, get_the_next_key
 
 
 def generate_event_on_date(date, summary):
@@ -36,3 +37,11 @@ class TestBinCollections(unittest.TestCase):
             print_events_summary_on_given_date("date",{})
         except:
             self.fail()
+
+    def test_get_the_next_key_ReturnNextKey(self):
+        test_dict=OrderedDict({'20180101':['x'], '20180103':['x','x'], '20180601':['y']})
+        self.assertEqual(get_the_next_key(test_dict,'20180201'),'20180601')
+    
+    def test_get_the_next_key_ReturnCurrentKey_WhenWeHaveItemsUnderTheCurrentKey(self):
+        test_dict=OrderedDict({'20180101':['x'], '20180103':['x','x'], '20180601':['y']})
+        self.assertEqual(get_the_next_key(test_dict,'20180103'),'20180103')

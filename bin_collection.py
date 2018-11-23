@@ -3,6 +3,7 @@ import urllib.request
 import urllib.error
 from icalendar import Calendar, Event
 from itertools import groupby
+from collections import OrderedDict
 
 
 def read_bin_data(url):
@@ -33,22 +34,51 @@ def bin_data_to_grouped_dict(events):
         Returns:
             dict: the events grouped by the date
     """
-    result = {}
-    for event in events:
+    result = OrderedDict()
+    sorted_events = sorted(events, key = lambda e: e.get('DTSTART').to_ical())
+    for event in sorted_events:
         key = event.get('DTSTART').to_ical().decode("utf-8")
         result[key] = result.get(key,list())
         result[key].append(event)
 
     return result
 
+def get_the_next_key(kv_dict, key):
+    """ return the current key if exist otherwise return the next key in the ordered dict
+        Args:
+            kv_dict(list[Event]): 
+        Returns:
+            dict: the events grouped by the date
+    """
+    if kv_dict.get(key):
+        return key
+
+    for k, _ in kv_dict.items():
+        if int(k) > int(key):
+            return k
+
+    return None
 
 def print_events_summary_on_given_date(date, bin_data):
-    if not bin_data.get(date):
-        print('No bin collection for the given date, are you sure you have entered the date correctly in YYYYMMMDD format?')
+    next_date = get_the_next_key(bin_data, date)
+    if not next_date:
+        print('No bin collection after the given date, are you sure you have entered the date correctly in YYYYMMMDD format?')
         return
-    for event in bin_data.get(date):
+    print(f'The next collection will be on {next_date}')
+    print('What bins will be collected:')
+    for event in bin_data.get(next_date):
         print(event.get('SUMMARY'))
 
+def validate_date(date):
+    try:
+        int(date)
+    except ValueError:
+        return False
+
+    if len(date) != 8:
+        return False
+    
+    return True
 
 def main(argv):
     bin_data_url = None
@@ -58,6 +88,10 @@ def main(argv):
         date_requested = argv[2]
     except:
         print('Expecting two parameters, the url for the icalendar data file and the date in YYYYMMDD')
+        sys.exit()
+
+    if not validate_date(date_requested):
+        print('Invalid date format, the date should be in this format YYYYMMDD')
         sys.exit()
 
     bin_data = read_bin_data(bin_data_url)
